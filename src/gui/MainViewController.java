@@ -35,7 +35,7 @@ public class MainViewController implements Initializable{
 	// Método para dar ação aos clicks no Departamento
 		@FXML
 		public void onMenuItemDepartamentoAction() {
-			System.out.println("onMenuItemDepartamentoAction");
+			loadView("/gui/DepartmentList.fxml");
 			
 		}
 		
