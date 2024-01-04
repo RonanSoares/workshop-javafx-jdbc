@@ -15,6 +15,7 @@ import javafx.scene.control.Alert.AlertType;
 import javafx.scene.control.MenuItem;
 import javafx.scene.control.ScrollPane;
 import javafx.scene.layout.VBox;
+import model.services.DepartmentService;
 
 public class MainViewController implements Initializable{
 	
@@ -35,7 +36,7 @@ public class MainViewController implements Initializable{
 	// Método para dar ação aos clicks no Departamento
 		@FXML
 		public void onMenuItemDepartamentoAction() {
-			loadView("/gui/DepartmentList.fxml");
+			loadView2("/gui/DepartmentList.fxml");
 			
 		}
 		
@@ -70,7 +71,33 @@ public class MainViewController implements Initializable{
 		}
 		catch(IOException e) {
 			Alerts.showAlert("IO Excessão", "Erro ao carregar a página", e.getMessage(), AlertType.ERROR);
-		}
-		
+		}		
 	}
+	
+	//Função para abrir a tela About. synchronized, para garantir que os cmdos não serão interrompidos
+		private synchronized void loadView2(String absoluteName) {
+			try {
+			FXMLLoader loader = new FXMLLoader(getClass().getResource(absoluteName));
+			VBox newVBox = loader.load();
+			
+			// Carrega a View dentro da janela principal
+			Scene mainScene = Main.getMainScene();  // Recebe o método get da Main.
+			VBox mainVBox = (VBox) ((ScrollPane) mainScene.getRoot()).getContent();  // Pega o primeiro elemento da view "ScroolPane"
+			
+			// Guarda uma referencia para o menu. Recebe o primeiro filho do VBox que é o mainMenu
+			Node mainMenu = mainVBox.getChildren().get(0);
+			mainVBox.getChildren().clear();                        // Limpa todos os filhos do mainBox
+			mainVBox.getChildren().add(mainMenu);                  // Adiciona o menu
+			mainVBox.getChildren().addAll(newVBox.getChildren());  //Adiciona a coleção    
+			
+			DepartmentListController controller = loader.getController();
+			controller.setDepartmentService(new DepartmentService());   //Injeção de dependencia.
+			controller.updateTableView();                               // Atualiza os dados na TableView.
+			
+			}
+			catch(IOException e) {
+				Alerts.showAlert("IO Excessão", "Erro ao carregar a página", e.getMessage(), AlertType.ERROR);
+			}
+			
+		}
 }
