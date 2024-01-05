@@ -46,8 +46,7 @@ public class MainViewController implements Initializable{
 		// Método para dar ação aos clicks no About
 		@FXML
 		public void onMenuItemAboutAction() {
-			loadView("/gui/About.fxml", x -> {});
-			
+			loadView("/gui/About.fxml", x -> {});			
 		}
 
 	@Override
