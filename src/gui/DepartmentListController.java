@@ -37,9 +37,9 @@ public class DepartmentListController implements Initializable{
 	@FXML
 	private TableColumn<Department, Integer> tableColumnId;
 	@FXML
-	private TableColumn<Department, String> tableColumnNome;
+	private TableColumn<Department, String> tableColumnName;
 	@FXML
-	private Button btNovo;
+	private Button btNew;
 	
 	// Criada lista para que os objetos do Department sejam inseridos nessa lista.
 	private ObservableList<Department> obsList;
@@ -64,7 +64,7 @@ public class DepartmentListController implements Initializable{
 	// Método auxiliar para inicializar alguns nodes. Colunas Id e nome
 	private void initializeNodes() {
 		tableColumnId.setCellValueFactory(new PropertyValueFactory<>("id"));
-		tableColumnNome.setCellValueFactory(new PropertyValueFactory<>("nome"));
+		tableColumnName.setCellValueFactory(new PropertyValueFactory<>("name"));
 		
 		// Para adequar o tamanho da TableView ao tamanho da janela.
 		Stage stage = (Stage) Main.getMainScene().getWindow(); //Pega a referencia.
