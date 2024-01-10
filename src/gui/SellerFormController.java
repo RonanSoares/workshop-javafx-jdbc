@@ -15,73 +15,91 @@ import gui.listeners.DataChangeListener;
 import gui.util.Alerts;
 import gui.util.Constraints;
 import gui.util.Utils;
+import javafx.collections.FXCollections;
+import javafx.collections.ObservableList;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
 import javafx.scene.control.Alert.AlertType;
 import javafx.scene.control.Button;
+import javafx.scene.control.ComboBox;
 import javafx.scene.control.DatePicker;
 import javafx.scene.control.Label;
+import javafx.scene.control.ListCell;
+import javafx.scene.control.ListView;
 import javafx.scene.control.TextField;
+import javafx.util.Callback;
+import model.entities.Department;
 import model.entities.Seller;
 import model.exceptions.ValidationException;
+import model.services.DepartmentService;
 import model.services.SellerService;
 
 public class SellerFormController implements Initializable {
-	
-	// Dependêcia para o Seller. Com vistas a popular o BD e Att os dados. Implementa o método Set
+
+	// Dependêcia para o Seller. Com vistas a popular o BD e Att os dados.
+	// Implementa o método Set
 	private Seller entity;
-	
-	private SellerService service;  //Dependência
-	
+
+	private SellerService service; // Dependência
+
+	private DepartmentService departmentService;
+
 	private List<DataChangeListener> dataChangeListeners = new ArrayList<>();
-	
+
 	@FXML
 	private TextField txtId;
-	
+
 	@FXML
 	private TextField txtName;
-	
+
 	@FXML
 	private TextField txtEmail;
-	
+
 	@FXML
 	private DatePicker dpBirthDate;
-	
+
 	@FXML
 	private TextField txtBaseSalary;
-	
+
 	@FXML
 	private Label labelErrorName;
-	
+
 	@FXML
 	private Label labelErrorEmail;
-	
+
 	@FXML
 	private Label labelErrorBirthDate;
-	
+
 	@FXML
 	private Label labelErrorBaseSalary;
-	
+
+	@FXML
+	private ComboBox<Department> comboBoxDepartment;
+
 	@FXML
 	private Button btSave;
-	
+
 	@FXML
 	private Button btCancel;
-	
+
+	private ObservableList<Department> obsList; // Cria a lista obsList
+
 	public void setSeller(Seller entity) {
 		this.entity = entity;
 	}
-	
-	public void setSellerService(SellerService service) {
+
+	public void setServices(SellerService service, DepartmentService departmentservice) { // Injeção service e
+																							// departmentService
 		this.service = service;
+		this.departmentService = departmentservice;
 	}
-	
+
 	public void subscribeDataChangeListener(DataChangeListener listener) {
-		dataChangeListeners.add(listener);  // Adiciona na lista
+		dataChangeListeners.add(listener); // Adiciona na lista
 	}
-	
-	//Método para aplicar os eventos nos botões.
+
+	// Método para aplicar os eventos nos botões.
 	@FXML
 	public void onBtSaveAction(ActionEvent event) {
 		if (entity == null) {
@@ -91,20 +109,16 @@ public class SellerFormController implements Initializable {
 			throw new IllegalStateException("Service was null");
 		}
 		try {
-			entity = getFormData();             //Pega os dados que estão no formulario e instancia um departamento
+			entity = getFormData(); // Pega os dados que estão no formulario e instancia um departamento
 			service.saveOrUpdate(entity);
-			notifyDataChangeListeners();        // Pega referencia para a janela atual
-			Utils.currentStage(event).close();  // Fecha a janela
-		}
-		catch (ValidationException e) {
+			notifyDataChangeListeners(); // Pega referencia para a janela atual
+			Utils.currentStage(event).close(); // Fecha a janela
+		} catch (ValidationException e) {
 			setErrorMessages(e.getErrors());
-		}
-		catch (DbException e) {
+		} catch (DbException e) {
 			Alerts.showAlert("Error saving object", null, e.getMessage(), AlertType.ERROR);
 		}
 	}
-
-	
 
 	private void notifyDataChangeListeners() {
 		for (DataChangeListener listener : dataChangeListeners) {
@@ -114,20 +128,20 @@ public class SellerFormController implements Initializable {
 
 	private Seller getFormData() {
 		Seller obj = new Seller();
-		
-		ValidationException exception = new ValidationException("Validation error");  //Instancia a exceção
-		
+
+		ValidationException exception = new ValidationException("Validation error"); // Instancia a exceção
+
 		obj.setId(Utils.tryParseToInt(txtId.getText()));
-		
-		if (txtName.getText() == null || txtName.getText().trim().equals("")) { //Se a caixa estiver vazia
-			exception.addError("name", "O campo não pode ser vazio");                 //Lança a excessão
+
+		if (txtName.getText() == null || txtName.getText().trim().equals("")) { // Se a caixa estiver vazia
+			exception.addError("name", "O campo não pode ser vazio"); // Lança a excessão
 		}
 		obj.setName(txtName.getText());
-		
-		if (exception.getErrors().size() > 0) { //Se houber uma excessã
-			throw exception;                    //Lança a excessão
+
+		if (exception.getErrors().size() > 0) { // Se houber uma excessã
+			throw exception; // Lança a excessão
 		}
-		
+
 		return obj;
 	}
 
@@ -135,12 +149,12 @@ public class SellerFormController implements Initializable {
 	public void onBtCancelAction(ActionEvent event) {
 		Utils.currentStage(event).close();
 	}
-	
+
 	@Override
 	public void initialize(URL url, ResourceBundle rb) {
 		initializeNodes();
 	}
-	
+
 	// Método para aplicar restrições nos objetos das janelas
 	private void initializeNodes() {
 		Constraints.setTextFieldInteger(txtId);
@@ -148,8 +162,10 @@ public class SellerFormController implements Initializable {
 		Constraints.setTextFieldDouble(txtBaseSalary);
 		Constraints.setTextFieldMaxLength(txtEmail, 60);
 		Utils.formatDatePicker(dpBirthDate, "dd/MM/yyyy");
+		
+		initializeComboBoxDepartment();    //Chama o método
 	}
-	
+
 	// Para popular as caixas de textos.
 	public void updateFormData() {
 		if (entity == null) {
@@ -160,16 +176,46 @@ public class SellerFormController implements Initializable {
 		txtEmail.setText(entity.getEmail());
 		Locale.setDefault(Locale.US);
 		txtBaseSalary.setText(String.format("%.2f", entity.getBaseSalary()));
-		if(entity.getBirthDate() != null) {
+		if (entity.getBirthDate() != null) {
 			dpBirthDate.setValue(LocalDate.ofInstant(entity.getBirthDate().toInstant(), ZoneId.systemDefault()));
 		}
-	}
-	
-	private void setErrorMessages(Map<String, String> errors) { //Carrega os erros e percorre a coleção preenchendo os erros
-		Set<String> fields = errors.keySet();
-		
-		if (fields.contains("name")) {
-			labelErrorName.setText(errors.get("name"));  //Label recebe os erros.
+		if(entity.getDepartment() == null) {
+			comboBoxDepartment.getSelectionModel().selectFirst(); //Caso tenha um departamento associado ao vendedor pega o primeiro elemento
+		}else {
+			
 		}
+		comboBoxDepartment.setValue(entity.getDepartment());       //Departamento vai para o combobox
+	}
+
+	// Método para carregar os dados na lista obsList
+	public void loadAssociateObjects() {
+		if (departmentService == null) { // Programação defensiva
+			throw new IllegalStateException("Departamento de serviço esta nulo");
+		}
+		List<Department> list = departmentService.findAll(); // Carrega a lista do BD
+		obsList = FXCollections.observableArrayList(list);   // Envia os dados para a obsList
+		comboBoxDepartment.setItems(obsList);                // Seta a lista
+	}
+
+	private void setErrorMessages(Map<String, String> errors) { // Carrega os erros e percorre a coleção preenchendo os
+																// erros
+		Set<String> fields = errors.keySet();
+
+		if (fields.contains("name")) {
+			labelErrorName.setText(errors.get("name")); // Label recebe os erros.
+		}
+	}
+
+	//Método para iniciar o ComboBox
+	private void initializeComboBoxDepartment() {
+		Callback<ListView<Department>, ListCell<Department>> factory = lv -> new ListCell<Department>() {
+			@Override
+			protected void updateItem(Department item, boolean empty) {
+				super.updateItem(item, empty);
+				setText(empty ? "" : item.getName());
+			}
+		};
+		comboBoxDepartment.setCellFactory(factory);
+		comboBoxDepartment.setButtonCell(factory.call(null));
 	}
 }

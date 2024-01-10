@@ -23,7 +23,7 @@ public class SellerService {
 		}
 	}
 	
-	// Remove um departamento no BD
+	// Remove um seller no BD
 	public void remove(Seller obj) {
 		dao.deleteById(obj.getId());
 	}

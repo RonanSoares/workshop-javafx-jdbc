@@ -31,11 +31,11 @@ import javafx.scene.layout.Pane;
 import javafx.stage.Modality;
 import javafx.stage.Stage;
 import model.entities.Seller;
+import model.services.DepartmentService;
 import model.services.SellerService;
 
 public class SellerListController implements Initializable, DataChangeListener {
 
-	// Declaração da dependência da classe SellerService
 	private SellerService service;
 
 	@FXML
@@ -46,7 +46,7 @@ public class SellerListController implements Initializable, DataChangeListener {
 
 	@FXML
 	private TableColumn<Seller, String> tableColumnName;
-	
+
 	@FXML
 	private TableColumn<Seller, String> tableColumnEmail;
 	
@@ -55,7 +55,7 @@ public class SellerListController implements Initializable, DataChangeListener {
 	
 	@FXML
 	private TableColumn<Seller, Double> tableColumnBaseSalary;
-
+	
 	@FXML
 	private TableColumn<Seller, Seller> tableColumnEDIT;
 
@@ -65,17 +65,15 @@ public class SellerListController implements Initializable, DataChangeListener {
 	@FXML
 	private Button btNew;
 
-	// Criada lista para que os objetos do Seller sejam inseridos nessa lista.
 	private ObservableList<Seller> obsList;
 
 	@FXML
 	public void onBtNewAction(ActionEvent event) {
 		Stage parentStage = Utils.currentStage(event);
-		Seller obj = new Seller();                                  //Instancia um departamento vazio
+		Seller obj = new Seller();
 		createDialogForm(obj, "/gui/SellerForm.fxml", parentStage);
 	}
 
-	// Cria o método get do atributo service para injeção de dependência
 	public void setSellerService(SellerService service) {
 		this.service = service;
 	}
@@ -85,60 +83,62 @@ public class SellerListController implements Initializable, DataChangeListener {
 		initializeNodes();
 	}
 
-	// Método auxiliar para inicializar alguns nodes. Colunas Id e nome
 	private void initializeNodes() {
 		tableColumnId.setCellValueFactory(new PropertyValueFactory<>("id"));
 		tableColumnName.setCellValueFactory(new PropertyValueFactory<>("name"));
 		tableColumnEmail.setCellValueFactory(new PropertyValueFactory<>("email"));
-		tableColumnBirthDate.setCellValueFactory(new PropertyValueFactory<>("birthDate"));		
-		Utils.formatTableColumnDate(tableColumnBirthDate, "dd/MM/yyyy");                     //Formatar a data
+		tableColumnBirthDate.setCellValueFactory(new PropertyValueFactory<>("birthDate"));
+		Utils.formatTableColumnDate(tableColumnBirthDate, "dd/MM/yyyy");
 		tableColumnBaseSalary.setCellValueFactory(new PropertyValueFactory<>("baseSalary"));
-		Utils.formatTableColumnDouble(tableColumnBaseSalary, 2);                             //Formatar o salario 2 casas dec.
-		
+		Utils.formatTableColumnDouble(tableColumnBaseSalary, 2);
 
-		// Para adequar o tamanho da TableView ao tamanho da janela
-		Stage stage = (Stage) Main.getMainScene().getWindow();                  //Pega a referencia.
-		tableViewSeller.prefHeightProperty().bind(stage.heightProperty());  //Macete para o TableView acompanhar o tamanho da janela	
+		Stage stage = (Stage) Main.getMainScene().getWindow();
+		tableViewSeller.prefHeightProperty().bind(stage.heightProperty());
 	}
 
-	// Método responsável por acessar os servicos, carregar os departamentos e joga-los no obsList
 	public void updateTableView() {
 		if (service == null) {
 			throw new IllegalStateException("Service was null");
 		}
-		List<Seller> list = service.findAll();          // Recupera os departamentos do metodo da classe SellerService
-		obsList = FXCollections.observableArrayList(list);  // obsList recebe a lista
-		tableViewSeller.setItems(obsList);              // A tableViewSeller recebe a obsList.
-		initEditButtons();                                  //Chama o método para acrescentar um botão em cada linha da tabela
+		List<Seller> list = service.findAll();
+		obsList = FXCollections.observableArrayList(list);
+		tableViewSeller.setItems(obsList);
+		initEditButtons();
 		initRemoveButtons();
 	}
 
-	// Função para chamar a janela de Seller para preencher os dados
 	private void createDialogForm(Seller obj, String absoluteName, Stage parentStage) {
 		try {
 			FXMLLoader loader = new FXMLLoader(getClass().getResource(absoluteName));
 			Pane pane = loader.load();
 
-			SellerFormController controller = loader.getController(); //Pega a referência para o controlador
-			controller.setSeller(obj);                                // Injeta no controlador o departamento
-			controller.setSellerService(new SellerService());     // Injeção de dependência
-			controller.subscribeDataChangeListener(this);                 //
-			controller.updateFormData();                                   //Carrega os dados do objeto no formulário
+			SellerFormController controller = loader.getController();
+			controller.setSeller(obj);
+			controller.setServices(new SellerService(), new DepartmentService());
+			controller.loadAssociateObjects();
+			controller.subscribeDataChangeListener(this);
+			controller.updateFormData();
 
 			Stage dialogStage = new Stage();
 			dialogStage.setTitle("Enter Seller data");
 			dialogStage.setScene(new Scene(pane));
-			dialogStage.setResizable(false);                     // Janela não pode ser redimensionada
+			dialogStage.setResizable(false);
 			dialogStage.initOwner(parentStage);
-			dialogStage.initModality(Modality.WINDOW_MODAL);     // Enquanto a janela não for fechada, não pode acessar a janela anterior
-			dialogStage.showAndWait();                           // Chama a janela
+			dialogStage.initModality(Modality.WINDOW_MODAL);
+			dialogStage.showAndWait();
 		} catch (IOException e) {
 			e.printStackTrace();
 			Alerts.showAlert("IO Exception", "Error loading view", e.getMessage(), AlertType.ERROR);
-		}  
+		}   
+	}   
+
+	@Override
+	public void onDataChaged() {
+		updateTableView();
+		
 	}
 
-	//Método especial para criar os botões de edição em cada linha da tabela e já edita-los.
+
 	private void initEditButtons() {
 		tableColumnEDIT.setCellValueFactory(param -> new ReadOnlyObjectWrapper<>(param.getValue()));
 		tableColumnEDIT.setCellFactory(param -> new TableCell<Seller, Seller>() {
@@ -158,7 +158,6 @@ public class SellerListController implements Initializable, DataChangeListener {
 		});
 	}
 
-	//Método para remover departamentos
 	private void initRemoveButtons() {
 		tableColumnREMOVE.setCellValueFactory(param -> new ReadOnlyObjectWrapper<>(param.getValue()));
 		tableColumnREMOVE.setCellFactory(param -> new TableCell<Seller, Seller>() {
@@ -178,24 +177,19 @@ public class SellerListController implements Initializable, DataChangeListener {
 	}
 
 	private void removeEntity(Seller obj) {
-		Optional<ButtonType> result = Alerts.showConfirmation("Confirmação", "Tem certeza que voçê quer deletar?"); //Alerta para a deleção
+		Optional<ButtonType> result = Alerts.showConfirmation("Confirmation", "Are you sure to delete?");
 
-		if (result.get() == ButtonType.OK) {  //Se apertar no ok, confirma a deleção
+		if (result.get() == ButtonType.OK) {
 			if (service == null) {
 				throw new IllegalStateException("Service was null");
 			}
 			try {
-				service.remove(obj);    // Remove os dados
-				updateTableView();      //Atualizar os dados da tabela
+				service.remove(obj);
+				updateTableView();
 			}
 			catch (DbIntegrityException e) {
-				Alerts.showAlert("Erro ao apagar o registro", null, e.getMessage(), AlertType.ERROR);
+				Alerts.showAlert("Error removing object", null, e.getMessage(), AlertType.ERROR);
 			}
 		}
-	}
-
-	@Override
-	public void onDataChaged() {
-		updateTableView();		
-	}
+	}	
 }

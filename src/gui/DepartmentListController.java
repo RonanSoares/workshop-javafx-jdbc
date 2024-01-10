@@ -173,6 +173,7 @@ public class DepartmentListController implements Initializable, DataChangeListen
 				updateTableView();      //Atualizar os dados da tabela
 			}
 			catch (DbIntegrityException e) {
+				e.printStackTrace();        // Para aparecer no console possiveis outros erros.
 				Alerts.showAlert("Erro ao apagar o registro", null, e.getMessage(), AlertType.ERROR);
 			}
 		}
