@@ -73,6 +73,7 @@ public class Utils {
 		});
 	}
 
+	// Método para formatar a data no formato que a gente quiser
 	public static void formatDatePicker(DatePicker datePicker, String format) {
 		datePicker.setConverter(new StringConverter<LocalDate>() {
 			DateTimeFormatter dateFormatter = DateTimeFormatter.ofPattern(format);
